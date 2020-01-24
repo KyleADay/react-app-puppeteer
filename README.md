@@ -139,7 +139,7 @@ $ cp -r react-app-puppeteer/e2e <react-app>
 ```bash
 $ npm install --save-dev puppeteer jest-puppeteer
 ```
-* Install the TypeScript dependencies (optional, but useful) -
+* Install TypeScript declarations (optional, but useful as it provides auto-complete even if you're using JavaScript) -
 ```bash
 $ npm install @types/puppeteer @types/jest-environment-puppeteer @types/expect-puppeteer
 ```

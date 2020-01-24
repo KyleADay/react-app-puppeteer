@@ -1,68 +1,159 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project provides a simple way to add Puppeteer to a `create-react-app` generated app. It uses Jest as a test runner, modern JavaScript features and the page object model, and shows how easy it is to get Puppeteer up and running.
 
-## Available Scripts
+# Contents
+* [Why Puppeteer?](#why-puppeteer)
+* [Running Specs](#running-specs)
+* [Writing Specs and Page Objects](#writing-specs-and-page-objects)
+* [Adding to an Existing Project](#adding-to-an-existing-project)
 
-In the project directory, you can run:
+# Why Puppeteer?
 
-### `yarn start`
+Puppeteer is a powerful tool for UI automation. Developed by Google, Puppeteer controls Chromium or Chrome through a high-level API. It runs headless by default but can easily be configured to run in a browser.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+There are a couple of limitations – Puppeteer is JavaScript-only (it’s a node.js library), and currently limited to Chromium or Chrome (though at time of writing there is an experimental `puppeteer-firefox` package).
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+However, it offers much faster and less-flaky browser automation than Selenium-Webdriver.
 
-### `yarn test`
+# Running Specs
+To see Puppeteer in action, let's take a look at a sample project. If you want to skip this section and add this set-up to your current project, you can jump to [Adding to an Existing Project](#adding-to-an-existing-project). 
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Open a new terminal and run –
 
-### `yarn build`
+```bash
+$ git clone https://github.com/kyleaday/react-app-puppeteer
+$ cd react-app-puppeteer
+$ npm install
+```
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+This project uses `puppeteer` and `jest-puppeteer` as its dev dependencies. `jest-puppeteer` gives all the necessary configuration to hook-up Jest with Puppeteer. To set it up, there are two important configuration files.
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+The first one to look at is `jest.config.js`. It’s necessary to include `preset: “jest-puppeteer”` as a module export. Once set, Jest is ready to run tests with Puppeteer. Note that globals can also be set in this file.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```js
+//e2e/jest.config.js
 
-### `yarn eject`
+module.exports = {
+  preset: "jest-puppeteer",
+  globals: {
+    URL: "http://localhost:3000"
+  },
+  //...
+};
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+The second configuration file is `jest-puppeteer.config.js`. This allows custom configuration options, such as turning off headless mode, enabling slowMo for easier debugging, specifying server settings, etc.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```js
+//e2e/jest-puppeteer.config.js
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+module.exports = {
+  launch: {
+    headless: false,
+    slowMo: 300
+  }
+};
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Now we’re set-up, we can run some tests. Let’s start the app –
 
-## Learn More
+```bash
+$ npm start
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+And open a new terminal to run the tests –
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+$ npm run e2e
+```
 
-### Code Splitting
+Looking at the script in the `package.json`, `e2e` runs `cd e2e && jest`. This changes our directory to `e2e` so jest can use the correct configuration files.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+Jest-puppeteer automatically starts a server when the tests are run, and it closes the server when the tests have finished, so there is no need to do this manually.
 
-### Analyzing the Bundle Size
+As we've set the config to not run headless, the browser will open, and the tests can be seen in action.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+# Writing Specs and Page Objects
 
-### Making a Progressive Web App
+This project follows the page object model, which aims to separate the UI structure from the specs or tests. Spec files can be found in `e2e/specs`, and the accompanying page objects are in `e2e/pageObjects`. Let’s look at the spec and page object for `app.js` –
+ 
+```js
+//e2e/specs/app.js
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+import { getIntroText, getLinkText } from "../pageObjects/app";
+import { load } from "../pageObjects/index";
 
-### Advanced Configuration
+describe("React App", () => {
+  beforeEach(async () => {
+    await load();
+  });
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+  it("should show the correct intro", async () => {
+    expect(await getIntroText()).toBe("Edit src/App.js and save to reload.");
+  });
 
-### Deployment
+  it("should show the correct link", async () => {
+    expect(await getLinkText()).toBe("Learn React");
+  });
+});
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+This spec imports the `load` method and the `getIntroText` and `getLinkText` functions from the page object files. It uses the [Jest API globals](https://jestjs.io/docs/en/api) `describe` to group the tests, and `beforeEach` to load the browser before each test. The `it` method runs the tests and `expect` is used to access [validation matchers](https://jestjs.io/docs/en/expect), in this case `toBe`. Note that the keyword `await` ensures that methods and functions resolve before running the next line.
 
-### `yarn build` fails to minify
+Using the page object model makes the spec easy to read – it loads the page, gets the text and checks the actual text matches the expected text.
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+Examining the page object shows how we are using Puppeteer  –
+
+```js
+//e2e/pageObjects/app.js
+
+import { root } from './index';
+
+const introSelector = '.App-header > p';
+const linkSelector = '.App-link';
+
+export const getIntroText = async () => {
+  const app = await root();
+  return await app.$eval(introSelector, el => el.innerText);
+}
+
+export const getLinkText = async () => {
+  const app = await root();
+  return await app.$eval(linkSelector, el => el.innerText);
+}
+```
+
+The Puppeteer API has classes with methods that allow us to interact with a page. In this example, we've created an `elementHandle` instance from our `app` page object. This allows us to use the method `elementHandle.$eval(selector, pageFunction[,…args]`, rewritten as `app.$eval(introSelector, el => el.innerText)`. We are using CSS selectors and the `innerText` pageFunction to evaluate the selector and return its inner text.
+
+Separating the selectors and methods adds to further readability and makes the tests easier to maintain.
+
+There are many more classes and methods with Puppeteer, and a full list can be found [here](https://pptr.dev/).
+
+# Adding to an existing project:
+
+To use this set-up on existing projects –
+* Copy the e2e folder into the root of the project -
+```bash
+$ cp -r react-app-puppeteer/e2e <react-app>
+```
+* Install the additional dev dependencies -
+```bash
+$ npm install --save-dev puppeteer jest-puppeteer
+```
+* Install the TypeScript dependencies (optional, but useful) -
+```bash
+$ npm install @types/puppeteer @types/jest-environment-puppeteer @types/expect-puppeteer
+```
+* Add the following script in the project’s `package.json` -
+```js
+{
+  // ...
+  "scripts": {
+    // ...
+    "e2e": "cd e2e && jest",
+  }
+}
+```
+
+# Further testing
+
+As seen in this example, Puppeteer is easy to set-up for quickly getting started with UI automation. Puppeteer can also be used to generate screenshots and PDFs, test Chrome Extensions, emulate mobile devices, measure performance, and more. So now you're all set-up, there is much more testing to explore with Puppeteer.
